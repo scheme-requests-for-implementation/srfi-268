@@ -5,6 +5,7 @@
           (srfi 231)
           (srfi 268 read)
           (srfi 268 write)
+	  (tests util)
           )
   (begin
     ;; Write array *A* and read the output back in with read-array.
@@ -15,12 +16,6 @@
 	 	  (write-array A port)
 	 	  (get-output-string port)))))
 	(call-with-port (open-input-string s) read-array)))
-
-    ;; A crude notion of equality, but sufficient for our purposes.
-    (define (array=? A B)
-      (and (eqv? (array-storage-class A) (array-storage-class B))
-	   (interval= (array-domain A) (array-domain B))
-	   (equal? (array->list A) (array->list B))))
 
     (define (array-wr-equals? A)
       (array=? A (write-&-read-array A)))
