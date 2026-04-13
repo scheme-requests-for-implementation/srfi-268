@@ -1,8 +1,7 @@
 ;;; The contents-list parsing code was snarfed from Bradley Lucier's
 ;;; SRFI 231 sample implementation.
 (define-library (srfi 268 read)
-  (export read-array
-	  read-array-from-string)
+  (export read-array)
   (import (scheme base)
 	  (scheme case-lambda)
 	  (scheme char)
@@ -163,11 +162,4 @@
            (build-array (srfi-231:make-interval lowers uppers)
                         class
                         contents)))))
-
-    ;; Debugging--belongs in tests.
-    (define (read-array-from-string s)
-      (call-with-port
-       (open-input-string s)
-       read-array))
-
   ))
