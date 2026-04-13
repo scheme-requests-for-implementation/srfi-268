@@ -5,6 +5,7 @@
 	  read-array-from-string)
   (import (scheme base)
 	  (scheme case-lambda)
+	  (scheme char)
 	  (scheme read)
 	  (scheme write)
           (prefix (srfi 1) srfi-1:)
@@ -60,12 +61,12 @@
 
     (define (parse-tag)
       (consume-tag-prefix)
-      (if (eqv? #\( (peek-char))  ; elided type?
-          srfi-231:generic-storage-class
+      (if (char-alphabetic? (peek-char))  ; type present?
           (let ((class-sym (read)))
             (unless (symbol? class-sym)
               (parsing-error "invalid array tag" class-sym))
-            (class-symbol->storage-class class-sym))))
+            (class-symbol->storage-class class-sym))
+          srfi-231:generic-storage-class))  ; type elided
 
     ;; Split *bounds* into two corresponding vectors of lower
     ;; and upper bounds.
