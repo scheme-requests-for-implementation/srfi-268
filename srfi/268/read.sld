@@ -134,7 +134,7 @@
 
     ;; Returns a new array built from the given components.  We
     ;; have to use 'list->array' (which takes a flat list) because
-    ;; 'list*->array' does not take in interval argument.
+    ;; 'list*->array' does not take an interval argument.
     (define (build-array interval storage-class contents)
       (let ((dimension (srfi-231:interval-dimension interval)))
 	(unless (check-nested-list dimension contents)
