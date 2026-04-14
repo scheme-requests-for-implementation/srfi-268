@@ -29,10 +29,55 @@
 	(c64  . ,srfi-231:c64-storage-class)
 	(c128 . ,srfi-231:c128-storage-class)))
 
+    ;;; Error reporting
+
     (define (check-arg who pred x)
       (unless (pred x)
 	(error (string-append who ": invalid argument")
 	       x)))
+
+    (define (parsing-error msg . irritants)
+      (apply error
+	     (string-append "read-array: " msg)
+	     irritants))
+
+    ;;; Nested-list processing (from SRFI 231)
+
+    (define (flatten-nested-list dimension nested-list)
+      (case dimension
+	((0) (list nested-list))
+	((1) (list-copy nested-list))
+	(else
+	 (srfi-1:append-map
+	  (lambda (l)
+	    (flatten-nested-list (- dimension 1) l))
+	  nested-list))))
+
+    ;; Returns a truthy value (a list) if *nested-data* has the
+    ;; right shape for *dimension*.  Otherwise returns #f.
+    (define (check-nested-list dimension nested-data)
+      (if (eqv? dimension 0)
+	  '()
+	  (and (list? nested-data)
+	       (let ((len (length nested-data)))
+		 (cond ((eqv? len 0) '())
+		       ((eqv? dimension 1) (list len))
+		       (else
+			(let* ((sublists
+				(map (lambda (l)
+				       (check-nested-list
+					(- dimension 1)
+					l))
+				     nested-data))
+			       (first (car sublists)))
+			  (and first
+			       (srfi-1:every
+				(lambda (l)
+				  (equal? first l))
+			 	(cdr sublists))
+			       (cons len first)))))))))
+
+    ;;; Parser
 
     ;; Read the next char & raise an error if it's not in
     ;; valid-chars.
@@ -47,13 +92,7 @@
       (consume '(#\#))
       (consume '(#\a #\A)))
 
-    (define (parsing-error msg . irritants)
-      (apply error
-	     (string-append "read-array: " msg)
-	     irritants))
-
-    ;; Parse an array tag from *port* and return an appropriate
-    ;; storage class.
+    ;; Return an appropriate storage class for array type *sym*.
     (define (class-symbol->storage-class sym)
       (cond ((assv sym storage-class-symbols) => cdr)
 	    (else (parsing-error "invalid array type" sym))))
@@ -86,19 +125,16 @@
 	  (parsing-error "invalid bounds spec" bounds))
         (transform-bounds bounds)))
 
+    ;; Just check if *b* has the right type and leave the numerical
+    ;; checks to 'make-interval'.
     (define (check-bounds b)
-      ;; Just check if *b* has the right type and leave the numerical
-      ;; checks to 'make-interval'.
       (unless (or (integer? b)
 	          (and (list? b) (= 2 (length b))))
 	(parsing-error "invalid bounds spec element" b)))
 
-    ;; It would be easier to use list*->array to build the new
-    ;; array here, but we need finer-grained control over the
-    ;; interval.
-    ;; Thus it seems to be necessary to pad & flatten the nested
-    ;; contents and then pass them to list->array (which, unlike
-    ;; list*->array, takes an interval).
+    ;; Returns a new array built from the given components.  We
+    ;; have to use 'list->array' (which takes a flat list) because
+    ;; 'list*->array' does not take in interval argument.
     (define (build-array interval storage-class contents)
       (let ((dimension (srfi-231:interval-dimension interval)))
 	(unless (check-nested-list dimension contents)
@@ -109,39 +145,7 @@
 		              (flatten-nested-list
 			       (srfi-231:interval-dimension interval)
 			       contents)
-		     storage-class)))
-
-    (define (flatten-nested-list dimension nested-list)
-      (case dimension
-	((0) (list nested-list))
-	((1) (list-copy nested-list))
-	(else
-	 (srfi-1:append-map
-	  (lambda (l)
-	    (flatten-nested-list (- dimension 1) l))
-	  nested-list))))
-
-    (define (check-nested-list dimension nested-data)
-      (if (eqv? dimension 0)
-	  '()
-	  (and (list? nested-data)
-	       (let ((len (length nested-data)))
-		 (cond ((eqv? len 0) '())
-		       ((eqv? dimension 1) (list len))
-		       (else
-			(let* ((sublists
-				(map (lambda (l)
-				       (check-nested-list
-					(- dimension 1)
-					l))
-				     nested-data))
-			       (first (car sublists)))
-			  (and first
-			       (srfi-1:every
-				(lambda (l)
-				  (equal? first l))
-			 	(cdr sublists))
-			       (cons len first)))))))))
+			      storage-class)))
 
     (define read-array
       (case-lambda

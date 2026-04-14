@@ -6,15 +6,11 @@
           (prefix (srfi 231) srfi-231:)
           )
   (begin
-    ;;; Error reporting
-
     (define (check-arg who pred x)
       (unless (pred x)
 	(error (string-append who ": invalid argument")
 	       x)))
 
-    ;; Associates the storage classes defined by SRFI 231 with
-    ;; the appropriate array tags.
     (define storage-classes
       `((,srfi-231:char-storage-class . char)
         (,srfi-231:s8-storage-class . s8)
