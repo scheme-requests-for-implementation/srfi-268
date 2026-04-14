@@ -133,6 +133,9 @@
 	(test-assert "0d char array"
 	  (array=? (list*->array 0 #\b char-storage-class)
 		   (string->array "#achar() #\\b")))
+	(test-assert "empty 2d generic array"
+	  (array=? (list->array (make-interval '#(1 0)) '())
+		   (string->array "#a(1 0) ()")))
 	(test-assert "4d levi-civita"
 	  (array=?
 	   (list*->array 4
