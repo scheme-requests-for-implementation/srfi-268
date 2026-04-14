@@ -46,22 +46,23 @@
 
     (define (write-bounds array)
       (let* ((iv (srfi-231:array-domain array))
-	     (dimension (srfi-231:interval-dimension iv))
-	     (write-dim-bounds
-	      (lambda (d)
-		(display "(")
-		(display (srfi-231:interval-lower-bound iv d))
-		(display " ")
-		(display (srfi-231:interval-upper-bound iv d))
-		(display ")"))))
+	     (dimension (srfi-231:interval-dimension iv)))
 	(display "(")
 	;; Print bounds pair for each dimension of iv.
 	(do ((i 0 (+ i 1)))
 	    ((= i dimension))
-	  (write-dim-bounds i)
+	  (write-bounds-list iv i)
 	  (when (< i (- dimension 1))
 	    (display " ")))
 	(display ")")))
+
+    ;; Write a bounds list for a single element of *interval*.
+    (define (write-bounds-list interval idx)
+      (display "(")
+      (display (srfi-231:interval-lower-bound interval idx))
+      (display " ")
+      (display (srfi-231:interval-upper-bound interval idx))
+      (display ")"))
 
     (define (write-contents array)
       (write (srfi-231:array->list* array)))
