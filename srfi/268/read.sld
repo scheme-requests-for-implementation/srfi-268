@@ -1,7 +1,7 @@
 ;;; The contents-list parsing code was snarfed from Bradley Lucier's
 ;;; SRFI 231 sample implementation.
 (define-library (srfi 268 read)
-  (export read-array)
+  (export read-array transform-bounds)
   (import (scheme base)
 	  (scheme case-lambda)
 	  (scheme char)
@@ -69,26 +69,22 @@
 
     ;; Split *bounds* into two corresponding vectors of lower
     ;; and upper bounds.
-    (define (transform-bounds bounds lowers uppers)
-      (if (null? bounds)
-          (values (list->vector (reverse lowers))
-                  (list->vector (reverse uppers)))
-          (let ((b (car bounds)) (rest (cdr bounds)))
-            (check-bounds b)
-            (cond ((integer? b)  ; upper bound only?
-                   (transform-bounds rest
-                                     (cons 0 lowers)
-                                     (cons b uppers)))
-                  ((pair? b)     ; (<lower> <upper>) list
-                   (transform-bounds rest
-                                     (cons (car b) lowers)
-                                     (cons (cadr b) uppers)))))))
+    (define (transform-bounds bounds)
+      (let-values (((lowers uppers)
+		    (srfi-1:unzip2
+		     (map (lambda (b)
+			    (check-bounds b)
+			    (if (integer? b)
+				(list 0 b)
+				b))
+			  bounds))))
+	 (values (list->vector lowers) (list->vector uppers))))
 
     (define (parse-bounds)
       (let ((bounds (read)))
 	(unless (list? bounds)
 	  (parsing-error "invalid bounds spec" bounds))
-        (transform-bounds bounds '() '())))
+        (transform-bounds bounds)))
 
     (define (check-bounds b)
       ;; Just check if *b* has the right type and leave the numerical
